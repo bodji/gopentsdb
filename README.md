@@ -23,13 +23,12 @@ tags["disk"]        = "sda"
 put := gopentsdb.NewPut("disk_occupation", tags, 13.37)
 
 // Send it to OpenTSDB
-opentsdb.Put( put )
+_, err := opentsdb.Put( put )
+if err != nil {
+ log.Printf("Fail to push to OpenTSDB : %s", err)
+}
 
 ```
-
-Your are probably wondering why there's no error check on Put. 
-
-The main reason is that the module is launching a goroutine to periodically check the state of the OpenTSDB server by sending "version" to the socket.
 
 
 ### Todo
