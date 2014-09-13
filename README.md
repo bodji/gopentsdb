@@ -22,6 +22,9 @@ tags["disk"]        = "sda"
 // Create Put
 put := gopentsdb.Put("disk_occupation", tags, 13.37)
 
+// Send it to OpenTSDB
+opentsdb.Put( put )
+
 ```
 
 Your are probably wondering why there's no error check on Put. 
