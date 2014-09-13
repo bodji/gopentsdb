@@ -1,47 +1,45 @@
 package gopentsdb
 
 import (
-	"net"
-	"time"
-	"fmt"
 	"bytes"
+	"errors"
+	"fmt"
+	"log"
+	"net"
 	"strings"
 	"sync"
-	"errors"
-    "log"
+	"time"
 )
 
-
-var opentsdbConnection 	net.Conn
-var opentsdbWriteLock	*sync.RWMutex
-
+var opentsdbConnection net.Conn
+var opentsdbWriteLock *sync.RWMutex
 
 type OpenTsdb struct {
-	TsdAddress 	string
-	TsdPort		int
+	TsdAddress string
+	TsdPort    int
 
-	connected	bool
-    verbose     bool
+	connected bool
+	verbose   bool
 }
 
-func NewOpenTsdb( address string, port int, verbose bool ) ( this *OpenTsdb ){
+func NewOpenTsdb(address string, port int, verbose bool) (this *OpenTsdb) {
 
 	this = new(OpenTsdb)
 	this.TsdAddress = address
-	this.TsdPort	= port
-	this.connected	= false
-    this.verbose    = verbose
+	this.TsdPort = port
+	this.connected = false
+	this.verbose = verbose
 
 	// Init mutex
 	opentsdbWriteLock = new(sync.RWMutex)
 
 	// Launch goroutine to periodically check
-	go func(){
+	go func() {
 		for {
 			if !this.StillAlive() {
 
 				// Connection to OpenTSDB
-				connection, err := net.DialTimeout("tcp", fmt.Sprintf("%s:%d",this.TsdAddress,this.TsdPort), time.Second * 2 )
+				connection, err := net.DialTimeout("tcp", fmt.Sprintf("%s:%d", this.TsdAddress, this.TsdPort), time.Second*2)
 				if err != nil {
 					this.connected = false
 					fmt.Printf("Failed to connect to OpenTSDB : %s\n", err)
@@ -58,11 +56,10 @@ func NewOpenTsdb( address string, port int, verbose bool ) ( this *OpenTsdb ){
 	return
 }
 
-
-func ( this *OpenTsdb ) Put( p *Put ) ( i int, err error ){
+func (this *OpenTsdb) Put(p *Put) (i int, err error) {
 
 	// Are we connected to OpenTSDB ?
-	if ! this.connected {
+	if !this.connected {
 		return -1, errors.New("gopentsdb: Can't put, not connected")
 	}
 
@@ -71,21 +68,20 @@ func ( this *OpenTsdb ) Put( p *Put ) ( i int, err error ){
 	defer opentsdbWriteLock.Unlock()
 
 	// Put
-	i,err = fmt.Fprintf(opentsdbConnection, p.ToString() + "\n")
-    if err != nil {
-        return i, err
-    }
+	i, err = fmt.Fprintf(opentsdbConnection, p.ToString()+"\n")
+	if err != nil {
+		return i, err
+	}
 
-    // Log?
-    if this.verbose {
-        log.Printf("[GOPENTSDB] " + p.ToString() + "\n")
-    }
+	// Log?
+	if this.verbose {
+		log.Printf("[GOPENTSDB] " + p.ToString() + "\n")
+	}
 
-    return i,err
+	return i, err
 }
 
-
-func ( this *OpenTsdb ) StillAlive() ( bool ){
+func (this *OpenTsdb) StillAlive() bool {
 
 	// Test nil
 	if opentsdbConnection == nil {
@@ -97,23 +93,23 @@ func ( this *OpenTsdb ) StillAlive() ( bool ){
 	defer opentsdbWriteLock.Unlock()
 
 	// Send "version" to socket
-	fmt.Fprintf(opentsdbConnection, "version" + "\n")
+	fmt.Fprintf(opentsdbConnection, "version"+"\n")
 
 	// Get content
-	opentsdbConnection.SetReadDeadline( time.Now().Add( time.Second ))
-    completeOutput := new(bytes.Buffer)
+	opentsdbConnection.SetReadDeadline(time.Now().Add(time.Second))
+	completeOutput := new(bytes.Buffer)
 
-    for {
-        reply := make([]byte, 512)
-        read_len, err := opentsdbConnection.Read(reply)
-        if ( err != nil ) {
-            break
-        }
-        completeOutput.Write(reply[:read_len])
-    }
+	for {
+		reply := make([]byte, 512)
+		read_len, err := opentsdbConnection.Read(reply)
+		if err != nil {
+			break
+		}
+		completeOutput.Write(reply[:read_len])
+	}
 
 	// Test response
-	if strings.Contains( completeOutput.String(), "net.opentsdb" ) {
+	if strings.Contains(completeOutput.String(), "net.opentsdb") {
 		return true
 	}
 
