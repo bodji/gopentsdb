@@ -31,3 +31,7 @@ Your are probably wondering why there's no error check on Put.
 
 The main reason is that the module is launching a goroutine to periodically check the state of the OpenTSDB server by sending "version" to the socket.
 
+
+### Todo
+* Replace forbidden characters in metric name, tags name, and tags values
+* Stack puts while opentsdb is not available to send them later
