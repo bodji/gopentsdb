@@ -42,7 +42,7 @@ func NewOpenTsdb(address string, port int, verbose bool) (this *OpenTsdb) {
 				connection, err := net.DialTimeout("tcp", fmt.Sprintf("%s:%d", this.TsdAddress, this.TsdPort), time.Second*2)
 				if err != nil {
 					this.connected = false
-					fmt.Printf("Failed to connect to OpenTSDB : %s\n", err)
+					log.Printf("Failed to connect to OpenTSDB : %s\n", err)
 				} else {
 					this.connected = true
 					opentsdbConnection = connection
