@@ -8,6 +8,7 @@ import (
 	"strings"
 	"sync"
 	"errors"
+    "log"
 )
 
 
@@ -18,15 +19,18 @@ var opentsdbWriteLock	*sync.RWMutex
 type OpenTsdb struct {
 	TsdAddress 	string
 	TsdPort		int
+
 	connected	bool
+    verbose     bool
 }
 
-func NewOpenTsdb( address string, port int ) ( this *OpenTsdb ){
+func NewOpenTsdb( address string, port int, verbose bool ) ( this *OpenTsdb ){
 
 	this = new(OpenTsdb)
 	this.TsdAddress = address
 	this.TsdPort	= port
 	this.connected	= false
+    this.verbose    = verbose
 
 	// Init mutex
 	opentsdbWriteLock = new(sync.RWMutex)
@@ -55,7 +59,7 @@ func NewOpenTsdb( address string, port int ) ( this *OpenTsdb ){
 }
 
 
-func ( this *OpenTsdb ) Put( p *Put ) ( int, error ){
+func ( this *OpenTsdb ) Put( p *Put ) ( i int, err error ){
 
 	// Are we connected to OpenTSDB ?
 	if ! this.connected {
@@ -67,7 +71,17 @@ func ( this *OpenTsdb ) Put( p *Put ) ( int, error ){
 	defer opentsdbWriteLock.Unlock()
 
 	// Put
-	return fmt.Fprintf(opentsdbConnection, p.ToString() + "\n")
+	i,err = fmt.Fprintf(opentsdbConnection, p.ToString() + "\n")
+    if err != nil {
+        return i, err
+    }
+
+    // Log?
+    if this.verbose {
+        log.Printf("[GOPENTSDB] " + p.ToString() + "\n")
+    }
+
+    return i,err
 }
 
 
