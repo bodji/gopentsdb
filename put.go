@@ -13,7 +13,6 @@ type Put struct {
 	value      float64
 }
 
-// Constructor
 func NewPut(metricName string, tags map[string]string, value float64) (p *Put) {
 
 	p = new(Put)
@@ -25,7 +24,6 @@ func NewPut(metricName string, tags map[string]string, value float64) (p *Put) {
 	return
 }
 
-// Getters / Setters
 func (p *Put) GetTimestamp() int64 {
 	return p.timestamp
 }
@@ -33,20 +31,21 @@ func (p *Put) SetTimestamp(t int64) {
 	p.timestamp = t
 }
 
-// Misc
+
+// ToString return the line that should be pushed to OpenTSDB raw socket
+// Example :
+// 
+//      put loadaverage 1.15 load=load15 hostname=localhost
+//
 func (p *Put) ToString() (s string) {
 
-	// Begin of string
 	s = fmt.Sprintf("put %s %d %.3f ", p.metricName, p.timestamp, p.value)
 
-	// Tags
 	for tagName, _ := range p.tags {
 
-		// Replaces spaces in keys and values
 		key := strings.ToLower(strings.Replace(tagName, " ", "_", 0))
 		value := strings.ToLower(strings.Replace(p.tags[tagName], " ", "_", 0))
 
-		// Concat
 		s += key + "=" + value + " "
 	}
 
