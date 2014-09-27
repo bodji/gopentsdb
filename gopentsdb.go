@@ -9,6 +9,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"sort"
 )
 
 var opentsdbConnection net.Conn
@@ -20,15 +21,21 @@ type OpenTsdb struct {
 
 	connected bool
 	verbose   bool
+
+	deduplication		bool
+	deduplicationMap  	map[string]*Put
 }
 
-func NewOpenTsdb(address string, port int, verbose bool) (this *OpenTsdb) {
+func NewOpenTsdb(address string, port int, verbose bool, deduplication bool) (this *OpenTsdb) {
 
 	this = new(OpenTsdb)
 	this.TsdAddress = address
 	this.TsdPort = port
 	this.connected = false
 	this.verbose = verbose
+
+	this.deduplication = deduplication
+	this.deduplicationMap = make(map[string]*Put)
 
 	// Init mutex
 	opentsdbWriteLock = new(sync.RWMutex)
@@ -53,6 +60,21 @@ func NewOpenTsdb(address string, port int, verbose bool) (this *OpenTsdb) {
 		}
 	}()
 
+	// Launch goroutine to clean dedup map
+	if deduplication {
+		go func() {
+			for {
+				currentTimestamp := time.Now().Unix()
+				for putFootPrint := range this.deduplicationMap {
+					if currentTimestamp - this.deduplicationMap[putFootPrint].timestamp > 600 {
+						delete(this.deduplicationMap, putFootPrint)
+					}
+				}
+				time.Sleep(time.Second * 60)
+			}
+		}()
+	}
+
 	return
 }
 
@@ -61,6 +83,11 @@ func (this *OpenTsdb) Put(p *Put) (i int, err error) {
 	// Are we connected to OpenTSDB ?
 	if !this.connected {
 		return -1, errors.New("gopentsdb: Can't put, not connected")
+	}
+
+	// Duplicate ?
+	if this.deduplication && this.IsDuplicate( p ) {
+		return 0,nil
 	}
 
 	// Lock
@@ -79,6 +106,42 @@ func (this *OpenTsdb) Put(p *Put) (i int, err error) {
 	}
 
 	return i, err
+}
+
+func (this *OpenTsdb) IsDuplicate(p *Put) ( duplicate bool ) {
+
+	duplicate = false
+
+	// Sort tags
+	var sortedTags []string
+	for tagName := range p.tags {
+		sortedTags = append(sortedTags,tagName)
+	}
+	sort.Strings(sortedTags)
+
+	// Make put footprint
+	putFootPrint := p.metricName
+	for i := range sortedTags {
+		putFootPrint += sortedTags[i] + p.tags[sortedTags[i]]
+	}
+
+	// Check if metric was already pushed before
+	if _, ok := this.deduplicationMap[ putFootPrint ]; ok{
+
+		// It exist before, check dedup
+		previousPut := this.deduplicationMap[ putFootPrint ]
+
+		if p.timestamp - previousPut.timestamp < 600 {
+			if previousPut.value == p.value {
+				duplicate = true
+			}
+		}
+
+	} else {
+		this.deduplicationMap[ putFootPrint ] = p
+	}
+
+	return duplicate
 }
 
 func (this *OpenTsdb) StillAlive() bool {
