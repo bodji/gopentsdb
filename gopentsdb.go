@@ -87,6 +87,9 @@ func (this *OpenTsdb) Put(p *Put) (i int, err error) {
 
 	// Duplicate ?
 	if this.deduplication && this.IsDuplicate( p ) {
+		if this.verbose {
+			log.Printf("[GOPENTSDB] Duplicate : " + p.ToString() + "\n")
+		}
 		return 0,nil
 	}
 
