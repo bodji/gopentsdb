@@ -11,7 +11,7 @@ go get github.com/bodji/opentsdb
 ### Usage
 
 ```Go
-opentsdb := gopentsdb.NewOpenTsdb("192.168.1.1", 4242, true)
+opentsdb := gopentsdb.NewOpenTsdb("192.168.1.1", 4242, true, true)
 
 // Create some tags
 tags := make(map[string]string)
@@ -29,6 +29,9 @@ if err != nil {
 }
 
 ```
+
+### Documentation
+http://godoc.org/github.com/bodji/gopentsdb
 
 
 ### Todo

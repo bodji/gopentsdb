@@ -26,6 +26,11 @@ type OpenTsdb struct {
 	deduplicationMap  	map[string]*Put
 }
 
+// GopenTSDB - Constructor
+// Params : address, port, verbose, deduplication
+// - verbose is a boolean to enable some logs (be careful, there is a log per put)
+// - deduplication is a boolean to enable deduplication of puts in a 10 minutes range
+//   (that means that if a put has the same value, tags, and metric, on a 10 minute period, it will be pushed once to OpenTSDB)
 func NewOpenTsdb(address string, port int, verbose bool, deduplication bool) (this *OpenTsdb) {
 
 	this = new(OpenTsdb)
