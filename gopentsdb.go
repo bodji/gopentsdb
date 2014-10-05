@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 	"sort"
+	"crypto/tls"
 )
 
 var opentsdbConnection net.Conn
@@ -31,7 +32,8 @@ type OpenTsdb struct {
 // - verbose is a boolean to enable some logs (be careful, there is a log per put)
 // - deduplication is a boolean to enable deduplication of puts in a 10 minutes range
 //   (that means that if a put has the same value, tags, and metric, on a 10 minute period, it will be pushed once to OpenTSDB)
-func NewOpenTsdb(address string, port int, verbose bool, deduplication bool) (this *OpenTsdb) {
+// - ssl enable ssl on tsd socket. Certificate is not verified
+func NewOpenTsdb(address string, port int, verbose bool, deduplication bool, ssl bool) (this *OpenTsdb) {
 
 	this = new(OpenTsdb)
 	this.TsdAddress = address
@@ -51,12 +53,21 @@ func NewOpenTsdb(address string, port int, verbose bool, deduplication bool) (th
 			if !this.StillAlive() {
 
 				// Connection to OpenTSDB
-				connection, err := net.DialTimeout("tcp", fmt.Sprintf("%s:%d", this.TsdAddress, this.TsdPort), time.Second*2)
+				var connection net.Conn
+				var err	error
+
+				if ssl {
+					connection, err = tls.Dial("tcp", fmt.Sprintf("%s:%d", this.TsdAddress, this.TsdPort), &tls.Config{ InsecureSkipVerify: true })
+				} else {
+					connection, err = net.DialTimeout("tcp", fmt.Sprintf("%s:%d", this.TsdAddress, this.TsdPort), time.Second*2)
+				}
+
 				if err != nil {
 					this.connected = false
 					log.Printf("Failed to connect to OpenTSDB : %s\n", err)
 				} else {
 					this.connected = true
+					log.Println("Connected to OpenTSDB")
 					opentsdbConnection = connection
 				}
 			}
