@@ -153,11 +153,13 @@ func (this *OpenTsdb) IsDuplicate(p *Put) ( duplicate bool ) {
 		if p.timestamp - previousPut.timestamp < 600 {
 			if previousPut.value == p.value {
 				duplicate = true
+
+                // Update point (keep timestamp)
+                p.timestamp = previousPut.timestamp
 			}
 		}
 
-        // Update point (keep timestamp)
-		p.timestamp = previousPut.timestamp
+        // Update point
         this.deduplicationMap[ putFootPrint ] = p
 
 
