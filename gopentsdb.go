@@ -66,9 +66,11 @@ func NewOpenTsdb(address string, port int, verbose bool, deduplication bool, ssl
 					this.connected = false
 					log.Printf("Failed to connect to OpenTSDB : %s\n", err)
 				} else {
-					this.connected = true
-					log.Println("Connected to OpenTSDB")
-					opentsdbConnection = connection
+                    if !this.connected {
+					    this.connected = true
+					    log.Println("Connected to OpenTSDB")
+					    opentsdbConnection = connection
+                    }
 				}
 			}
 
