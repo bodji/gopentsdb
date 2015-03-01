@@ -162,6 +162,7 @@ type OpenTsdb struct {
 // - deduplication is a boolean to enable deduplication of puts in a 10 minutes range
 //   (that means that if a put has the same value, tags, and metric, on a 10 minute period, it will be pushed once to OpenTSDB)
 // - ssl enable ssl on tsd socket. Certificate is not verified
+// TODO handle flush before shutdown
 func NewOpenTsdb(hosts []string, ssl bool, deduplication int, buffersize int) (this *OpenTsdb, err error) {
 	this = new(OpenTsdb)
 
@@ -195,7 +196,7 @@ func NewOpenTsdb(hosts []string, ssl bool, deduplication int, buffersize int) (t
 	return
 }
 
-func (this *OpenTsdb) Put(put *Put) {
+func (this *OpenTsdb) Put(put *Put) (err error){
 	// Duplicate ?
 	if this.deduplication > 0 && this.IsDuplicate( put ) {
 		if verbose {
@@ -210,6 +211,9 @@ func (this *OpenTsdb) Put(put *Put) {
 			log.Printf("gopentsdb: discarding " + put.ToString() + " : channel is full\n")
 		}
 	}
+
+	// TODO figure out a way to detect and propagate failure properly
+	return
 }
 
 func (this *OpenTsdb) IsDuplicate(p *Put) ( duplicate bool ) {
