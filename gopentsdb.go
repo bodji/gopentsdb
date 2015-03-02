@@ -201,6 +201,7 @@ func (this *OpenTsdb) Put(put *Put) (err error){
 	if this.deduplication > 0 && this.IsDuplicate( put ) {
 		if verbose {
 			log.Printf("gopentsdb: discarding " + put.ToString() + " : duplicate\n")
+			return
 		}
 	}
 
