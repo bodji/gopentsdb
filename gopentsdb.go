@@ -102,7 +102,7 @@ func (this *Tsd) StillAlive() bool {
 	fmt.Fprintf(this.conn, "version"+"\n")
 
 	// Get content
-	this.conn.SetReadDeadline(time.Now().Add(time.Second))
+	this.conn.SetReadDeadline(time.Now().Add(time.Duration(10) * time.Second))
 	reply := new(bytes.Buffer)
 
 	for {
