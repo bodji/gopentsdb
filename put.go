@@ -44,7 +44,7 @@ func (p *Put) ToString() (s string) {
 	for tagName, _ := range p.tags {
 
 		key := strings.ToLower(strings.Replace(tagName, " ", "_", 0))
-		value := strings.ToLower(strings.Replace(p.tags[tagName], " ", "_", 0))
+		value := strings.Replace(p.tags[tagName], " ", "_", 0)
 
 		s += key + "=" + value + " "
 	}
